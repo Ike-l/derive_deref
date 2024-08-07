@@ -1,9 +1,9 @@
-#![crate_name = "derive_deref"]
+#![crate_name = "small_derive_deref"]
 //! ## Example
 //! 
 //! ```rust
 //! use std::ops::DerefMut;
-//! use derive_deref::{Deref, DerefMut};
+//! use small_derive_deref::{Deref, DerefMut};
 //! 
 //! #[derive(Deref, DerefMut)]
 //! struct WrapperStructDifferentTargets {
@@ -40,7 +40,7 @@ use syn::{parse_macro_input, Data, DeriveInput, Fields};
 /// ## Example
 /// 
 /// ```rust
-/// use derive_deref::Deref;
+/// use small_derive_deref::Deref;
 /// 
 /// #[derive(Deref)]
 /// struct WrapperStruct {
@@ -125,7 +125,7 @@ pub fn derive_deref(input: TokenStream) -> TokenStream {
 /// ## Struct
 /// ```rust
 /// use std::ops::DerefMut;
-/// use derive_deref::{Deref, DerefMut};
+/// use small_derive_deref::{Deref, DerefMut};
 /// 
 /// #[derive(DerefMut, Deref)]
 /// struct WrapperStruct {

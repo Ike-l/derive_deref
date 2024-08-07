@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use std::ops::DerefMut;
-    use derive_deref::{Deref, DerefMut};
+    use small_derive_deref::{Deref, DerefMut};
 
     #[derive(Deref)]
     struct WrapperTupleDeref(i32);
