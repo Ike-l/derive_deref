@@ -6,18 +6,18 @@
 //! use small_derive_deref::{Deref, DerefMut};
 //! 
 //! #[derive(Deref, DerefMut)]
-//! struct WrapperStructDifferentTargets {
+//! struct WrapperStructDifferentTargetsGenerics<'a> {
 //!     #[DerefTarget]
-//!     field: i32,
+//!     field: &'a str,
 //!     #[DerefMutTarget]
-//!     field_mut: i32,
+//!     field_mut: &'a str,
 //! }
 //! 
 //! fn struct_deref_mut_different_targets() {
-//!     let mut w = WrapperStructDifferentTargets { field: 1, field_mut: 2};
-//!     *w *= 2;
-//!     assert_eq!(*w, 1);
-//!     assert_eq!(*w.deref_mut(), 4);
+//!     let mut w = WrapperStructDifferentTargetsGenerics { field: "not rust", field_mut: "RuSt"};
+//!     *w = "rUst";
+//!     assert_eq!(*w, "not rust");
+//!     assert_eq!(*w.deref_mut(), "rUst");
 //! }
 //! 
 //! #[derive(Deref, DerefMut)]
@@ -65,6 +65,7 @@ use syn::{parse_macro_input, Data, DeriveInput, Fields};
 pub fn derive_deref(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
+    let generics = input.generics;
 
     let expanded = match input.data {
         Data::Struct(data_struct) => {
@@ -84,7 +85,7 @@ pub fn derive_deref(input: TokenStream) -> TokenStream {
                         let field_type = &field.ty;
 
                         quote! {
-                            impl std::ops::Deref for #name {
+                            impl #generics std::ops::Deref for #name #generics {
                                 type Target = #field_type;
 
                                 fn deref(&self) -> &Self::Target {
@@ -100,7 +101,7 @@ pub fn derive_deref(input: TokenStream) -> TokenStream {
                     let field_type = &unnamed.unnamed[0].ty;
 
                     quote! {
-                        impl std::ops::Deref for #name {
+                        impl #generics std::ops::Deref for #name #generics {
                             type Target = #field_type;
 
                             fn deref(&self) -> &Self::Target {
@@ -153,6 +154,7 @@ pub fn derive_deref(input: TokenStream) -> TokenStream {
 pub fn derive_deref_mut(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let struct_name = input.ident;
+    let generics = input.generics;
 
     let expanded = match input.data {
         syn::Data::Struct(data_struct) => {
@@ -170,7 +172,7 @@ pub fn derive_deref_mut(input: TokenStream) -> TokenStream {
                     if let Some(field) = field {
                         let field_name = &field.ident;
                         quote! {
-                            impl std::ops::DerefMut for #struct_name {
+                            impl #generics std::ops::DerefMut for #struct_name #generics {
                                 fn deref_mut(&mut self) -> &mut Self::Target {
                                     &mut self.#field_name
                                 }
@@ -182,7 +184,7 @@ pub fn derive_deref_mut(input: TokenStream) -> TokenStream {
                 },
                 Fields::Unnamed(_) => {
                     quote! {
-                        impl std::ops::DerefMut for #struct_name {
+                        impl #generics std::ops::DerefMut for #struct_name #generics {
                             fn deref_mut(&mut self) -> &mut Self::Target {
                                 &mut self.0
                             }
