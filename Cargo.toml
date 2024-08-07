@@ -2,8 +2,10 @@
 name = "derive_deref"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT OR Apache-2.0"
+description = "Derive the Deref and DerefMut traits"
+repository = "https://github.com/Ike-l/derive_deref"
+readme = "README.md"
 
 [dependencies]
 quote = "1.0.36"
