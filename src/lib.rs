@@ -13,22 +13,19 @@
 //!     field_mut: &'a str,
 //! }
 //! 
-//! fn struct_deref_mut_different_targets() {
-//!     let mut w = WrapperStructDifferentTargetsGenerics { field: "not rust", field_mut: "RuSt"};
-//!     *w = "rUst";
-//!     assert_eq!(*w, "not rust");
-//!     assert_eq!(*w.deref_mut(), "rUst");
-//! }
+//! let mut w = WrapperStructDifferentTargetsGenerics { field: "not rust", field_mut: "rust"};
+//! *w = "rUst";
+//! assert_eq!(*w, "not rust");
+//! assert_eq!(*w.deref_mut(), "rUst");
+//! 
 //! 
 //! #[derive(Deref, DerefMut)]
 //! struct WrapperTuple(i32, i32);
 //! 
-//! fn tuple_deref_mut() {
-//!     let mut w = WrapperTuple(1, 3);
-//!     *w *= 2;
-//!     assert_eq!(*w, 2);
-//!     assert_eq!(*w.deref_mut(), 2);
-//! }
+//! let mut w = WrapperTuple(1, 3);
+//! *w *= 2;
+//! assert_eq!(*w, 2);
+//! assert_eq!(*w.deref_mut(), 2);
 //! ```
 
 
@@ -37,6 +34,7 @@ use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 /// Defines Deref either on a struct or a tuple.<br>
+/// No attribute needed for structs with one field or tuples.<br>
 /// ## Example
 /// 
 /// ```rust
@@ -44,22 +42,28 @@ use syn::{parse_macro_input, Data, DeriveInput, Fields};
 /// 
 /// #[derive(Deref)]
 /// struct WrapperStruct {
-///     #[DerefTarget]
 ///     field: i32,
 /// }
 /// 
-/// fn struct_deref() {
-///     let w = WrapperStruct { field: 1 };
-///     assert_eq!(*w, 1);
+/// let w = WrapperStruct { field: 1 };
+/// assert_eq!(*w, 1);
+/// 
+/// #[derive(Deref)]
+/// struct WrapperMultipleStruct {
+///     #[DerefTarget]
+///     field1: i32,
+///     field2: i32,
 /// }
+/// 
+/// let w = WrapperMultipleStruct { field1: 1, field2: 2 };
+/// 
+/// assert_eq!(*w, 1);
 /// 
 /// #[derive(Deref)]
 /// struct WrapperTuple(i32);
 /// 
-/// fn tuple_deref() {
-///     let w = WrapperTuple(1);
-///    assert_eq!(*w, 1);
-/// }
+/// let w = WrapperTuple(1);
+/// assert_eq!(*w, 1);
 /// ```
 #[proc_macro_derive(Deref, attributes(DerefTarget))]
 pub fn derive_deref(input: TokenStream) -> TokenStream {
@@ -71,7 +75,9 @@ pub fn derive_deref(input: TokenStream) -> TokenStream {
         Data::Struct(data_struct) => {
             match &data_struct.fields {
                 Fields::Named(named) => {
-                    let field = named.named.iter()
+                    let field = match named.named.len() {
+                        1 => { named.named.first() }
+                        _ => named.named.iter()
                         .find_map(|field| {
                             for attr in &field.attrs {
                                 if attr.path().is_ident("DerefTarget") {
@@ -79,7 +85,9 @@ pub fn derive_deref(input: TokenStream) -> TokenStream {
                                 }
                             }
                             None
-                        });
+                        })
+                    };
+
                     if let Some(field) = field {
                         let field_name = &field.ident;
                         let field_type = &field.ty;
@@ -122,6 +130,7 @@ pub fn derive_deref(input: TokenStream) -> TokenStream {
 
 
 /// Defines DerefMut either on a struct or a tuple.<br>
+/// No attribute needed for structs with one field or tuples.<br>
 /// # Examples
 /// ## Struct
 /// ```rust
@@ -130,25 +139,32 @@ pub fn derive_deref(input: TokenStream) -> TokenStream {
 /// 
 /// #[derive(DerefMut, Deref)]
 /// struct WrapperStruct {
-///     #[DerefMutTarget]
-///     #[DerefTarget]
 ///     field: i32,
 /// }
 ///
-/// fn struct_deref_mut() {
-///     let mut w = WrapperStruct { field: 1 };
-///     *w *= 2;
-///     assert_eq!(*w.deref_mut(), 2);
+/// let mut w = WrapperStruct { field: 1 };
+/// *w *= 2;
+/// assert_eq!(*w.deref_mut(), 2);
+/// 
+/// #[derive(DerefMut, Deref)]
+/// struct WrapperMultipleStruct {
+///     #[DerefTarget]
+///     field1: i32,
+///     #[DerefMutTarget]
+///     field2: i32,
 /// }
+/// 
+/// let mut w = WrapperMultipleStruct { field1: 1, field2: 3 };
+/// *w *= 2;
+/// assert_eq!(*w.deref_mut(), 6);
+/// assert_eq!(*w, 1);
 /// 
 /// #[derive(DerefMut, Deref)]
 /// struct WrapperTuple(i32);
 /// 
-/// fn tuple_deref() {
-///     let mut w = WrapperTuple(1);
-///     *w *= 2;
-///     assert_eq!(*w.deref_mut(), 2);
-/// }
+/// let mut w = WrapperTuple(1);
+/// *w *= 2;
+/// assert_eq!(*w.deref_mut(), 2);
 /// ```
 #[proc_macro_derive(DerefMut, attributes(DerefMutTarget))]
 pub fn derive_deref_mut(input: TokenStream) -> TokenStream {
@@ -160,14 +176,18 @@ pub fn derive_deref_mut(input: TokenStream) -> TokenStream {
         syn::Data::Struct(data_struct) => {
             match &data_struct.fields {
                 Fields::Named(named) => {
-                    let field = named.named.iter().find_map(|field| {
-                        for attr in &field.attrs {
-                            if attr.path().is_ident("DerefMutTarget") {
-                                return Some(field);
+                    let field = match named.named.len() {
+                        1 => { named.named.first() }
+                        _ => named.named.iter()
+                        .find_map(|field| {
+                            for attr in &field.attrs {
+                                if attr.path().is_ident("DerefMutTarget") {
+                                    return Some(field);
+                                }
                             }
-                        }
-                        None
-                    });
+                            None
+                        })
+                    };
 
                     if let Some(field) = field {
                         let field_name = &field.ident;
