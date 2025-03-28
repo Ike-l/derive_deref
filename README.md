@@ -10,7 +10,6 @@ It works for:
   * Will use the first field
 
 ## Known Limitations
-* Generics aren't properly implemented, works for the example and a few other primitive cases
 * The type of the fields for ```#[DerefTarget]``` and ```#[DerefMutTarget]``` must be the same
 
 ## Examples
@@ -18,17 +17,18 @@ It works for:
 use std::ops::DerefMut;
 use small_derive_deref::{Deref, DerefMut};
 
-#[derive(Deref, DerefMut)]
-struct WrapperStructDifferentTargetsGenerics<'a> {
+ #[derive(Deref, DerefMut)]
+ struct WrapperStructDifferentTargetsMultipleGenerics<'a, T> {
      #[DerefTarget]
      field: &'a str,
      #[DerefMutTarget]
      field_mut: &'a str,
+     foo: T
  }
  
- let mut w = WrapperStructDifferentTargetsGenerics { field: "not rust", field_mut: "rust"};
- *w = "rUst";
+ let mut w = WrapperStructDifferentTargetsMultipleGenerics { field: "not rust", field_mut: "rust", foo: "foo"};
  assert_eq!(*w, "not rust");
+ *w = "rUst";
  assert_eq!(*w.deref_mut(), "rUst");
  
  
